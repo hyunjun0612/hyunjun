@@ -1,0 +1,1490 @@
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>재범이의 플래피버디</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #0b0f19;
+      font-family: 'Jua', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      max-height: 800px;
+      background: #0f172a;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+      overflow: hidden;
+      border-radius: 16px;
+      border: 2px solid #1e293b;
+      transition: border-color 0.3s;
+    }
+
+    @media (max-width: 480px) {
+      #game-container {
+        border-radius: 0;
+        max-height: 100vh;
+        border: none;
+      }
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 16px;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 20;
+    }
+
+    .overlay.active {
+      pointer-events: auto;
+    }
+
+    #start-screen {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      overflow-y: auto;
+    }
+
+    .title-box {
+      animation: bounce 1.8s infinite ease-in-out;
+      margin-bottom: 10px;
+    }
+
+    .game-title {
+      font-size: 2.5rem;
+      color: #ffcc00;
+      text-shadow: 3px 3px 0px #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+      letter-spacing: 1px;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #ffffff;
+      text-shadow: 2px 2px 0px #000;
+      margin-top: 4px;
+    }
+
+    .start-btn {
+      font-family: 'Jua', sans-serif;
+      font-size: 1.4rem;
+      color: #ffffff;
+      background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+      padding: 10px 32px;
+      border-radius: 50px;
+      border: 3px solid #fff;
+      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.4), inset 0 2px 0 rgba(255,255,255,0.4);
+      cursor: pointer;
+      animation: pulse 1.2s infinite alternate;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      margin-top: 8px;
+    }
+
+    .selection-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 8px 0 12px 0;
+    }
+
+    .select-group-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .group-title {
+      font-size: 0.95rem;
+      color: #ffe082;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .select-btn {
+      font-family: 'Jua', sans-serif;
+      font-size: 0.9rem;
+      padding: 5px 11px;
+      border-radius: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      background: rgba(0, 0, 0, 0.45);
+      color: #d1d5db;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .select-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .select-btn[data-mode].selected {
+      background: linear-gradient(180deg, #06b6d4 0%, #0891b2 100%);
+      color: #ffffff;
+      border-color: #a5f3fc;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+      transform: scale(1.05);
+    }
+
+    .select-btn[data-diff="easy"].selected {
+      background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+      color: #ffffff;
+      border-color: #86efac;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+      transform: scale(1.05);
+    }
+
+    .select-btn[data-diff="normal"].selected {
+      background: linear-gradient(180deg, #f97316 0%, #c2410c 100%);
+      color: #ffffff;
+      border-color: #fdba74;
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.6);
+      transform: scale(1.05);
+    }
+
+    .select-btn[data-diff="hard"].selected {
+      background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+      color: #ffffff;
+      border-color: #fca5a5;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+      transform: scale(1.05);
+    }
+
+    .select-btn[data-theme].selected {
+      background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%);
+      color: #ffffff;
+      border-color: #ddd6fe;
+      box-shadow: 0 0 12px rgba(139, 92, 246, 0.7);
+      transform: scale(1.05);
+    }
+
+    .controls-hint {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      background: rgba(0,0,0,0.55);
+      padding: 6px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      line-height: 1.4;
+      max-width: 320px;
+    }
+
+    #hud-container {
+      position: absolute;
+      top: 25px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .hud-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 0.95rem;
+      color: #fef08a;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    .hud-val {
+      font-size: 3rem;
+      color: #ffffff;
+      text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+      line-height: 1;
+    }
+
+    .hud-val.p1-val { color: #60a5fa; }
+    .hud-val.p2-val { color: #f472b6; }
+
+    #game-over-screen {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(6px);
+      display: none;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 24px;
+      padding: 20px 18px;
+      width: 88%;
+      max-width: 320px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border: 3px solid #3b82f6;
+      text-align: center;
+      transform: scale(0.9);
+      animation: popIn 0.3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .winner-banner {
+      font-size: 1.8rem;
+      color: #facc15;
+      text-shadow: 2px 2px 0px #000;
+      margin-bottom: 6px;
+    }
+
+    .over-title {
+      font-size: 1.4rem;
+      color: #f87171;
+      text-shadow: 1px 1px 0px #000;
+      margin-bottom: 8px;
+    }
+
+    .info-tag {
+      display: inline-block;
+      font-size: 0.85rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffd700;
+      margin: 2px;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .tags-row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .score-board {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 16px;
+      padding: 12px;
+      margin: 10px 0 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.05rem;
+      color: #e2e8f0;
+    }
+
+    .score-val {
+      font-size: 1.5rem;
+      color: #ffcb05;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    .restart-btn {
+      font-family: 'Jua', sans-serif;
+      width: 100%;
+      font-size: 1.3rem;
+      color: #ffffff;
+      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      padding: 10px 0;
+      border-radius: 16px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 6px 15px rgba(220, 38, 38, 0.4);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .restart-btn:active {
+      transform: scale(0.96);
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    @keyframes popIn {
+      to { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD Overlay -->
+    <div id="hud-container">
+      <div class="hud-box" id="hud-single-box">
+        <div id="hud-score" class="hud-val">0</div>
+      </div>
+      <div class="hud-box" id="hud-p1-box" style="display: none;">
+        <span class="hud-label">P1 (파랑)</span>
+        <div id="hud-p1-score" class="hud-val p1-val">0</div>
+      </div>
+      <div class="hud-box" id="hud-p2-box" style="display: none;">
+        <span class="hud-label">P2 (핑크)</span>
+        <div id="hud-p2-score" class="hud-val p2-val">0</div>
+      </div>
+    </div>
+
+    <!-- Start Screen Overlay -->
+    <div id="start-screen" class="overlay active">
+      <div class="title-box">
+        <h1 class="game-title">재범이의<br>플래피버디</h1>
+        <p class="subtitle" id="theme-subtitle">🔥 펭귄의 지옥 탈출 🔥</p>
+      </div>
+      
+      <div class="selection-section">
+        <div class="select-group-container">
+          <span class="group-title">🎮 모드 선택</span>
+          <div class="btn-group">
+            <button class="select-btn select-mode-btn selected" data-mode="single">👤 1인용</button>
+            <button class="select-btn select-mode-btn" data-mode="pvp">⚔️ 2인 대결 (PvP)</button>
+          </div>
+        </div>
+
+        <div class="select-group-container">
+          <span class="group-title">🎨 테마 선택</span>
+          <div class="btn-group">
+            <button class="select-btn select-theme-btn selected" data-theme="hell">🔥 지옥</button>
+            <button class="select-btn select-theme-btn" data-theme="sky">🩵 하늘</button>
+            <button class="select-btn select-theme-btn" data-theme="space">🌌 우주</button>
+            <button class="select-btn select-theme-btn" data-theme="pink">🌸 핑크</button>
+          </div>
+        </div>
+
+        <div class="select-group-container">
+          <span class="group-title">⚡ 난이도 선택</span>
+          <div class="btn-group">
+            <button class="select-btn select-diff-btn" data-diff="easy">🌱 쉬움</button>
+            <button class="select-btn select-diff-btn selected" data-diff="normal">🔥 보통</button>
+            <button class="select-btn select-diff-btn" data-diff="hard">💀 지옥</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="start-btn" id="start-button">클릭해서 시작!</button>
+      <div class="controls-hint" id="controls-hint-text">
+        💡 스페이스바, ↑ 키 또는 화면 터치로 점프
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over-screen" class="overlay">
+      <div class="card">
+        <div id="winner-banner" class="winner-banner" style="display: none;">👑 P1 승리!</div>
+        <h2 class="over-title" id="over-title">GAME OVER</h2>
+        <div class="tags-row">
+          <div id="played-mode-tag" class="info-tag">모드: 👤 1인용</div>
+          <div id="played-theme-tag" class="info-tag">테마: 🔥 지옥</div>
+          <div id="played-diff-tag" class="info-tag">난이도: 🔥 보통</div>
+        </div>
+        
+        <div class="score-board" id="single-scoreboard">
+          <div class="score-row">
+            <span>이번 점수</span>
+            <span id="final-score" class="score-val">0</span>
+          </div>
+          <div class="score-row">
+            <span>최고 점수</span>
+            <span id="best-score" class="score-val">0</span>
+          </div>
+        </div>
+
+        <div class="score-board" id="pvp-scoreboard" style="display: none;">
+          <div class="score-row">
+            <span>🔵 P1 (파랑) 점수</span>
+            <span id="pvp-p1-score" class="score-val" style="color:#60a5fa;">0</span>
+          </div>
+          <div class="score-row">
+            <span>🩷 P2 (핑크) 점수</span>
+            <span id="pvp-p2-score" class="score-val" style="color:#f472b6;">0</span>
+          </div>
+        </div>
+
+        <button class="restart-btn" id="restart-button">다시하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Initialize DOM References
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const modeButtons = document.querySelectorAll('.select-mode-btn');
+    const diffButtons = document.querySelectorAll('.select-diff-btn');
+    const themeButtons = document.querySelectorAll('.select-theme-btn');
+    const themeSubtitle = document.getElementById('theme-subtitle');
+    const controlsHintText = document.getElementById('controls-hint-text');
+
+    const startScreen = document.getElementById('start-screen');
+    const startBtn = document.getElementById('start-button');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const restartBtn = document.getElementById('restart-button');
+
+    const winnerBanner = document.getElementById('winner-banner');
+    const overTitle = document.getElementById('over-title');
+    const playedModeTag = document.getElementById('played-mode-tag');
+    const playedThemeTag = document.getElementById('played-theme-tag');
+    const playedDiffTag = document.getElementById('played-diff-tag');
+
+    const singleScoreboard = document.getElementById('single-scoreboard');
+    const pvpScoreboard = document.getElementById('pvp-scoreboard');
+    const finalScoreEl = document.getElementById('final-score');
+    const bestScoreEl = document.getElementById('best-score');
+    const pvpP1ScoreEl = document.getElementById('pvp-p1-score');
+    const pvpP2ScoreEl = document.getElementById('pvp-p2-score');
+
+    const hudSingleBox = document.getElementById('hud-single-box');
+    const hudP1Box = document.getElementById('hud-p1-box');
+    const hudP2Box = document.getElementById('hud-p2-box');
+    const hudScore = document.getElementById('hud-score');
+    const hudP1Score = document.getElementById('hud-p1-score');
+    const hudP2Score = document.getElementById('hud-p2-score');
+
+    const sound = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+      playJump() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(420, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(850, this.ctx.currentTime + 0.09);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.09);
+        } catch(e) {}
+      },
+      playScore() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.18);
+        } catch(e) {}
+      },
+      playHit() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.2);
+        } catch(e) {}
+      }
+    };
+
+    // Standard comfortable Flappy Bird physics settings
+    const DIFFICULTY_CONFIG = {
+      easy: {
+        name: '🌱 쉬움',
+        gravity: 0.22,
+        jumpPower: -5.5,
+        pipeSpeed: 2.0,
+        pipeGap: 160,
+        pipeSpawnInterval: 105
+      },
+      normal: {
+        name: '🔥 보통',
+        gravity: 0.28,
+        jumpPower: -6.5,
+        pipeSpeed: 2.5,
+        pipeGap: 145,
+        pipeSpawnInterval: 90
+      },
+      hard: {
+        name: '💀 지옥',
+        gravity: 0.35,
+        jumpPower: -7.5,
+        pipeSpeed: 3.2,
+        pipeGap: 130,
+        pipeSpawnInterval: 75
+      }
+    };
+
+    const THEME_CONFIG = {
+      hell: {
+        name: '🔥 지옥',
+        subtitle: '🔥 펭귄의 지옥 탈출 🔥'
+      },
+      sky: {
+        name: '🩵 하늘',
+        subtitle: '☁️ 펭귄의 하늘 비행 ☁️'
+      },
+      space: {
+        name: '🌌 우주',
+        subtitle: '🚀 펭귄의 우주 탐험 🚀'
+      },
+      pink: {
+        name: '🌸 핑크',
+        subtitle: '🍬 펭귄의 디저트 여행 🍬'
+      }
+    };
+
+    let gameScale = 1;
+    let gameState = 'START';
+    let currentMode = 'single';
+    let currentDiff = 'normal';
+    let currentTheme = 'hell';
+    let highScore = localStorage.getItem(`jaebeom_flappy_highscore_${currentTheme}_${currentDiff}`) || 0;
+    let frameCount = 0;
+    let framesSinceLastPipe = 0;
+
+    let gravity = DIFFICULTY_CONFIG.normal.gravity;
+    let jumpPower = DIFFICULTY_CONFIG.normal.jumpPower;
+    let pipeSpeed = DIFFICULTY_CONFIG.normal.pipeSpeed;
+    let pipeSpawnInterval = DIFFICULTY_CONFIG.normal.pipeSpawnInterval;
+    let pipeGap = DIFFICULTY_CONFIG.normal.pipeGap;
+
+    function applyMode(modeKey) {
+      currentMode = modeKey;
+      modeButtons.forEach(btn => {
+        if (btn.dataset.mode === modeKey) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+
+      if (currentMode === 'single') {
+        controlsHintText.innerHTML = '💡 스페이스바, ↑ 키 또는 화면 터치로 점프';
+      } else {
+        controlsHintText.innerHTML = '💡 <b>P1(파랑)</b>: Space / W / 화면 왼쪽<br>💡 <b>P2(핑크)</b>: ↑ 방향키 / 화면 오른쪽';
+      }
+    }
+
+    function applyDifficulty(diffKey) {
+      currentDiff = diffKey;
+      const config = DIFFICULTY_CONFIG[diffKey];
+      gravity = config.gravity;
+      jumpPower = config.jumpPower;
+      pipeSpeed = config.pipeSpeed;
+      pipeGap = config.pipeGap;
+      pipeSpawnInterval = config.pipeSpawnInterval;
+
+      highScore = localStorage.getItem(`jaebeom_flappy_highscore_${currentTheme}_${currentDiff}`) || 0;
+
+      diffButtons.forEach(btn => {
+        if (btn.dataset.diff === diffKey) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
+    function applyTheme(themeKey) {
+      currentTheme = themeKey;
+      themeSubtitle.textContent = THEME_CONFIG[themeKey].subtitle;
+      highScore = localStorage.getItem(`jaebeom_flappy_highscore_${currentTheme}_${currentDiff}`) || 0;
+
+      themeButtons.forEach(btn => {
+        if (btn.dataset.theme === themeKey) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+
+      initThemeParticles();
+    }
+
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyMode(btn.dataset.mode);
+      });
+    });
+
+    diffButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyDifficulty(btn.dataset.diff);
+      });
+    });
+
+    themeButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyTheme(btn.dataset.theme);
+      });
+    });
+
+    function resizeCanvas() {
+      const container = document.getElementById('game-container');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      gameScale = canvas.width / 360;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class PenguinBird {
+      constructor(isP2 = false) {
+        this.isP2 = isP2;
+        this.radius = 26;
+        this.x = 0;
+        this.y = 0;
+        this.velocity = 0;
+        this.rotation = 0;
+        this.wingAngle = 0;
+        this.wingSpeed = 0.25;
+        this.isAlive = true;
+        this.score = 0;
+        this.deathFrame = 0;
+      }
+
+      reset(xOffset = 0) {
+        this.x = canvas.width * 0.28 + xOffset;
+        this.y = canvas.height * 0.45;
+        this.velocity = 0;
+        this.rotation = 0;
+        this.wingAngle = 0;
+        this.isAlive = true;
+        this.score = 0;
+        this.deathFrame = 0;
+      }
+
+      jump() {
+        if (!this.isAlive) return;
+        this.velocity = jumpPower;
+        sound.playJump();
+        createJumpParticles(this.x - 10, this.y + 5, this.isP2);
+      }
+
+      update() {
+        if (!this.isAlive) {
+          if (this.y < canvas.height + 50) {
+            this.velocity += gravity * 1.2;
+            this.y += this.velocity;
+            this.rotation = Math.min(1.5, this.rotation + 0.15);
+          }
+          return;
+        }
+
+        this.velocity += gravity;
+        this.y += this.velocity;
+
+        this.wingAngle += this.wingSpeed;
+        if (Math.abs(this.wingAngle) > 0.6) {
+          this.wingSpeed = -this.wingSpeed;
+        }
+
+        if (this.velocity < 0) {
+          this.rotation = Math.max(-0.45, this.velocity * 0.08);
+        } else {
+          this.rotation = Math.min(1.2, this.velocity * 0.08);
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+
+        if (!this.isAlive) {
+          ctx.globalAlpha = 0.6;
+        }
+
+        const r = this.radius;
+
+        // Feet
+        ctx.fillStyle = '#ff8c00';
+        ctx.strokeStyle = '#cc5200';
+        ctx.lineWidth = 1.5;
+        
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.3, r * 0.82, r * 0.32, r * 0.18, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.ellipse(r * 0.35, r * 0.82, r * 0.32, r * 0.18, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Body
+        ctx.fillStyle = this.isP2 ? '#ec4899' : '#1e293b';
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = this.isP2 ? '#831843' : '#0f172a';
+        ctx.stroke();
+
+        // Belly
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(r * 0.12, r * 0.08, r * 0.7, r * 0.76, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(r * 0.15, -r * 0.25, r * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(r * 0.58, -r * 0.25, r * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(r * 0.22, -r * 0.3, r * 0.08, 0, Math.PI * 2);
+        ctx.arc(r * 0.65, -r * 0.3, r * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cheeks
+        ctx.fillStyle = 'rgba(244, 114, 182, 0.75)';
+        ctx.beginPath();
+        ctx.arc(-r * 0.12, -r * 0.05, r * 0.18, 0, Math.PI * 2);
+        ctx.arc(r * 0.78, -r * 0.05, r * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Beak
+        ctx.fillStyle = '#ff9f00';
+        ctx.beginPath();
+        ctx.moveTo(r * 0.2, -r * 0.1);
+        ctx.lineTo(r * 0.92, 0);
+        ctx.lineTo(r * 0.2, r * 0.22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#cc7000';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(r * 0.2, 0.05 * r);
+        ctx.lineTo(r * 0.85, 0.05 * r);
+        ctx.stroke();
+
+        // Wing
+        ctx.fillStyle = this.isP2 ? '#be185d' : '#334155';
+        ctx.strokeStyle = this.isP2 ? '#831843' : '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.save();
+        ctx.translate(-r * 0.35, r * 0.05);
+        ctx.rotate(this.wingAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 0.48, r * 0.26, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        if (this.isP2) {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(0, -r * 0.9, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(-7, -r * 0.95, 7, 4, -0.3, 0, Math.PI * 2);
+          ctx.ellipse(7, -r * 0.95, 7, 4, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    const bird1 = new PenguinBird(false);
+    const bird2 = new PenguinBird(true);
+
+    let pipes = [];
+
+    function createPipe() {
+      const minHeight = 60;
+      const maxHeight = canvas.height - pipeGap - 120;
+      const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+      const width = 58;
+
+      pipes.push({
+        x: canvas.width,
+        topHeight: topHeight,
+        bottomY: topHeight + pipeGap,
+        width: width,
+        passedBy1: false,
+        passedBy2: false
+      });
+    }
+
+    function updatePipes() {
+      const maxScore = Math.max(bird1.score, bird2.score);
+      const speedBoost = Math.min(maxScore * 0.08, 2.5);
+      const currentPipeSpeed = pipeSpeed + speedBoost;
+
+      const targetDistance = pipeSpeed * pipeSpawnInterval;
+      const currentSpawnInterval = Math.max(18, Math.floor(targetDistance / currentPipeSpeed));
+
+      framesSinceLastPipe++;
+      if (framesSinceLastPipe >= currentSpawnInterval) {
+        createPipe();
+        framesSinceLastPipe = 0;
+      }
+
+      for (let i = pipes.length - 1; i >= 0; i--) {
+        const p = pipes[i];
+        p.x -= currentPipeSpeed;
+
+        if (bird1.isAlive && !p.passedBy1 && p.x + p.width < bird1.x) {
+          p.passedBy1 = true;
+          bird1.score++;
+          sound.playScore();
+          updateHudScores();
+        }
+
+        if (currentMode === 'pvp' && bird2.isAlive && !p.passedBy2 && p.x + p.width < bird2.x) {
+          p.passedBy2 = true;
+          bird2.score++;
+          if (!bird1.isAlive) sound.playScore();
+          updateHudScores();
+        }
+
+        if (p.x + p.width < -20) {
+          pipes.splice(i, 1);
+        }
+      }
+    }
+
+    function updateHudScores() {
+      if (currentMode === 'single') {
+        hudScore.textContent = bird1.score;
+      } else {
+        hudP1Score.textContent = bird1.score;
+        hudP2Score.textContent = bird2.score;
+      }
+    }
+
+    function drawPipes() {
+      pipes.forEach(p => {
+        const width = p.width;
+        const capHeight = 24;
+        const capWidthOffset = 4;
+
+        drawGreenPipeSegment(p.x, 0, width, p.topHeight - capHeight);
+        drawGreenPipeCap(p.x - capWidthOffset, p.topHeight - capHeight, width + capWidthOffset * 2, capHeight);
+
+        const bottomPipeHeight = canvas.height - p.bottomY;
+        drawGreenPipeSegment(p.x, p.bottomY + capHeight, width, bottomPipeHeight - capHeight);
+        drawGreenPipeCap(p.x - capWidthOffset, p.bottomY, width + capWidthOffset * 2, capHeight);
+      });
+    }
+
+    function drawGreenPipeSegment(x, y, w, h) {
+      if (h <= 0) return;
+      const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+      grad.addColorStop(0, '#53a005');
+      grad.addColorStop(0.25, '#73bf2e');
+      grad.addColorStop(0.6, '#9ee659');
+      grad.addColorStop(0.85, '#53a005');
+      grad.addColorStop(1, '#2d5c01');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, w, h);
+
+      ctx.strokeStyle = '#1d3b00';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(x, y, w, h);
+    }
+
+    function drawGreenPipeCap(x, y, w, h) {
+      const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+      grad.addColorStop(0, '#53a005');
+      grad.addColorStop(0.25, '#73bf2e');
+      grad.addColorStop(0.65, '#9ee659');
+      grad.addColorStop(0.85, '#53a005');
+      grad.addColorStop(1, '#2d5c01');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, w, h);
+
+      ctx.strokeStyle = '#1d3b00';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(x, y, w, h);
+    }
+
+    let themeParticles = [];
+    let jumpParticles = [];
+
+    function initThemeParticles() {
+      themeParticles = [];
+      const numParticles = currentTheme === 'space' ? 45 : 25;
+
+      for (let i = 0; i < numParticles; i++) {
+        themeParticles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 3 + 1,
+          speedY: (Math.random() - 0.5) * 0.8,
+          speedX: Math.random() * 1.2 + 0.3,
+          alpha: Math.random() * 0.8 + 0.2
+        });
+      }
+    }
+
+    function createJumpParticles(x, y, isP2 = false) {
+      for (let i = 0; i < 6; i++) {
+        jumpParticles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 3,
+          vy: Math.random() * 2 + 1,
+          radius: Math.random() * 4 + 2,
+          life: 1.0,
+          color: isP2 ? '#f472b6' : (currentTheme === 'pink' ? '#f472b6' : (currentTheme === 'space' ? '#c084fc' : (currentTheme === 'sky' ? '#7dd3fc' : '#ffcc00')))
+        });
+      }
+    }
+
+    function updateParticles() {
+      themeParticles.forEach(p => {
+        if (currentTheme === 'hell') {
+          p.y -= Math.abs(p.speedX);
+          p.x += p.speedY;
+          if (p.y < -10) {
+            p.y = canvas.height + 10;
+            p.x = Math.random() * canvas.width;
+          }
+        } else if (currentTheme === 'sky') {
+          p.x -= p.speedX * 0.6;
+          if (p.x < -40) {
+            p.x = canvas.width + 40;
+            p.y = Math.random() * (canvas.height * 0.6);
+          }
+        } else if (currentTheme === 'space') {
+          p.alpha += (Math.random() - 0.5) * 0.05;
+          if (p.alpha < 0.2) p.alpha = 0.2;
+          if (p.alpha > 0.9) p.alpha = 0.9;
+        } else if (currentTheme === 'pink') {
+          p.y -= 0.5;
+          p.x += Math.sin(frameCount * 0.05 + p.radius) * 0.4;
+          if (p.y < -10) {
+            p.y = canvas.height + 10;
+            p.x = Math.random() * canvas.width;
+          }
+        }
+      });
+
+      for (let i = jumpParticles.length - 1; i >= 0; i--) {
+        const p = jumpParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.05;
+        if (p.life <= 0) {
+          jumpParticles.splice(i, 1);
+        }
+      }
+    }
+
+    function drawThemeBackground() {
+      if (currentTheme === 'hell') {
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        skyGrad.addColorStop(0, '#150000');
+        skyGrad.addColorStop(0.5, '#3b0404');
+        skyGrad.addColorStop(0.85, '#6b0d0d');
+        skyGrad.addColorStop(1, '#941900');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#220303';
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height - 80);
+        ctx.lineTo(60, canvas.height - 210);
+        ctx.lineTo(120, canvas.height - 180);
+        ctx.lineTo(200, canvas.height - 260);
+        ctx.lineTo(270, canvas.height - 170);
+        ctx.lineTo(360, canvas.height - 230);
+        ctx.lineTo(canvas.width, canvas.height - 80);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(0, canvas.height);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 68, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(60, canvas.height - 210, 15, 0, Math.PI * 2);
+        ctx.arc(200, canvas.height - 260, 22, 0, Math.PI * 2);
+        ctx.arc(360, canvas.height - 230, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        themeParticles.forEach(e => {
+          ctx.fillStyle = `rgba(255, ${Math.floor(100 + e.alpha * 155)}, 0, ${e.alpha})`;
+          ctx.beginPath();
+          ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+      } else if (currentTheme === 'sky') {
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        skyGrad.addColorStop(0, '#38bdf8');
+        skyGrad.addColorStop(0.6, '#7dd3fc');
+        skyGrad.addColorStop(1, '#bae6fd');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#86efac';
+        ctx.beginPath();
+        ctx.arc(80, canvas.height - 40, 120, 0, Math.PI * 2);
+        ctx.arc(280, canvas.height - 30, 150, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(canvas.width - 50, 60, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        themeParticles.forEach(c => {
+          ctx.fillStyle = `rgba(255, 255, 255, ${c.alpha * 0.85})`;
+          ctx.beginPath();
+          ctx.arc(c.x, c.y, 18, 0, Math.PI * 2);
+          ctx.arc(c.x + 15, c.y - 8, 22, 0, Math.PI * 2);
+          ctx.arc(c.x + 32, c.y, 16, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+      } else if (currentTheme === 'space') {
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        skyGrad.addColorStop(0, '#030712');
+        skyGrad.addColorStop(0.6, '#0f172a');
+        skyGrad.addColorStop(1, '#2e1065');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(60, 70, 24, 0, Math.PI * 2);
+        ctx.fill();
+
+        themeParticles.forEach(s => {
+          ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.radius * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+      } else if (currentTheme === 'pink') {
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        skyGrad.addColorStop(0, '#581c87');
+        skyGrad.addColorStop(0.4, '#c026d3');
+        skyGrad.addColorStop(0.8, '#f472b6');
+        skyGrad.addColorStop(1, '#fbcfe8');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        themeParticles.forEach(h => {
+          ctx.fillStyle = `rgba(255, 255, 255, ${h.alpha})`;
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+    }
+
+    function drawThemeGround() {
+      const groundHeight = 70;
+      const groundY = canvas.height - groundHeight;
+
+      if (currentTheme === 'hell') {
+        const lavaGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+        lavaGrad.addColorStop(0, '#ff9900');
+        lavaGrad.addColorStop(0.3, '#ff3300');
+        lavaGrad.addColorStop(1, '#800000');
+
+        ctx.fillStyle = lavaGrad;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        for (let x = 0; x <= canvas.width; x += 20) {
+          const waveY = groundY + Math.sin((frameCount * 0.08) + (x * 0.05)) * 4;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(0, canvas.height);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#4a0000';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        for (let x = 0; x <= canvas.width; x += 20) {
+          const waveY = groundY + Math.sin((frameCount * 0.08) + (x * 0.05)) * 4;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.stroke();
+
+      } else if (currentTheme === 'sky') {
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(0, groundY, canvas.width, 16);
+
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(0, groundY + 16, canvas.width, groundHeight - 16);
+
+        ctx.strokeStyle = '#15803d';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY + 16);
+        ctx.lineTo(canvas.width, groundY + 16);
+        ctx.stroke();
+
+      } else if (currentTheme === 'space') {
+        const spaceGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+        spaceGrad.addColorStop(0, '#a855f7');
+        spaceGrad.addColorStop(0.3, '#4c1d95');
+        spaceGrad.addColorStop(1, '#0f172a');
+
+        ctx.fillStyle = spaceGrad;
+        ctx.fillRect(0, groundY, canvas.width, groundHeight);
+
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
+
+      } else if (currentTheme === 'pink') {
+        const pinkGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+        pinkGrad.addColorStop(0, '#f43f5e');
+        pinkGrad.addColorStop(0.4, '#be123c');
+        pinkGrad.addColorStop(1, '#881337');
+
+        ctx.fillStyle = pinkGrad;
+        ctx.fillRect(0, groundY, canvas.width, groundHeight);
+
+        ctx.strokeStyle = '#fecdd3';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        for (let x = 0; x <= canvas.width; x += 25) {
+          const waveY = groundY + Math.sin((frameCount * 0.06) + (x * 0.08)) * 3;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.stroke();
+      }
+
+      jumpParticles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      });
+    }
+
+    function checkBirdCollision(bird) {
+      if (!bird.isAlive) return false;
+
+      const groundY = canvas.height - 70;
+
+      if (bird.y - bird.radius <= 0 || bird.y + bird.radius >= groundY) {
+        return true;
+      }
+
+      for (let i = 0; i < pipes.length; i++) {
+        const p = pipes[i];
+        if (bird.x + bird.radius - 3 > p.x && bird.x - bird.radius + 3 < p.x + p.width) {
+          if (bird.y - bird.radius + 3 < p.topHeight || bird.y + bird.radius - 3 > p.bottomY) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function checkAllCollisions() {
+      if (bird1.isAlive && checkBirdCollision(bird1)) {
+        bird1.isAlive = false;
+        sound.playHit();
+      }
+
+      if (currentMode === 'pvp' && bird2.isAlive && checkBirdCollision(bird2)) {
+        bird2.isAlive = false;
+        sound.playHit();
+      }
+
+      if (currentMode === 'single') {
+        if (!bird1.isAlive) {
+          triggerGameOver();
+        }
+      } else {
+        if (!bird1.isAlive && !bird2.isAlive) {
+          triggerGameOver();
+        }
+      }
+    }
+
+    function triggerGameOver() {
+      gameState = 'GAMEOVER';
+
+      playedModeTag.textContent = `모드: ${currentMode === 'pvp' ? '⚔️ 2인 대결' : '👤 1인용'}`;
+      playedThemeTag.textContent = `테마: ${THEME_CONFIG[currentTheme].name}`;
+      playedDiffTag.textContent = `난이도: ${DIFFICULTY_CONFIG[currentDiff].name}`;
+
+      if (currentMode === 'single') {
+        winnerBanner.style.display = 'none';
+        overTitle.textContent = 'GAME OVER';
+
+        if (bird1.score > highScore) {
+          highScore = bird1.score;
+          localStorage.setItem(`jaebeom_flappy_highscore_${currentTheme}_${currentDiff}`, highScore);
+        }
+
+        finalScoreEl.textContent = bird1.score;
+        bestScoreEl.textContent = highScore;
+
+        singleScoreboard.style.display = 'flex';
+        pvpScoreboard.style.display = 'none';
+      } else {
+        winnerBanner.style.display = 'block';
+        overTitle.textContent = '대결 종료!';
+
+        pvpP1ScoreEl.textContent = bird1.score;
+        pvpP2ScoreEl.textContent = bird2.score;
+
+        if (bird1.score > bird2.score) {
+          winnerBanner.textContent = '👑 P1 (파랑) 승리!';
+          winnerBanner.style.color = '#60a5fa';
+        } else if (bird2.score > bird1.score) {
+          winnerBanner.textContent = '👑 P2 (핑크) 승리!';
+          winnerBanner.style.color = '#f472b6';
+        } else {
+          winnerBanner.textContent = '🤝 무승부!';
+          winnerBanner.style.color = '#facc15';
+        }
+
+        singleScoreboard.style.display = 'none';
+        pvpScoreboard.style.display = 'flex';
+      }
+
+      hudSingleBox.style.display = 'none';
+      hudP1Box.style.display = 'none';
+      hudP2Box.style.display = 'none';
+
+      gameOverScreen.style.display = 'flex';
+      gameOverScreen.classList.add('active');
+    }
+
+    function resetGame() {
+      frameCount = 0;
+      framesSinceLastPipe = 0;
+      pipes = [];
+      
+      if (currentMode === 'single') {
+        bird1.reset(0);
+        bird2.isAlive = false;
+      } else {
+        bird1.reset(-18);
+        bird2.reset(18);
+      }
+
+      if (currentMode === 'single') {
+        hudSingleBox.style.display = 'flex';
+        hudP1Box.style.display = 'none';
+        hudP2Box.style.display = 'none';
+        hudScore.textContent = '0';
+      } else {
+        hudSingleBox.style.display = 'none';
+        hudP1Box.style.display = 'flex';
+        hudP2Box.style.display = 'flex';
+        hudP1Score.textContent = '0';
+        hudP2Score.textContent = '0';
+      }
+
+      initThemeParticles();
+    }
+
+    function startGame() {
+      sound.init();
+      resetGame();
+      gameState = 'PLAYING';
+      
+      startScreen.style.display = 'none';
+      startScreen.classList.remove('active');
+      gameOverScreen.style.display = 'none';
+      gameOverScreen.classList.remove('active');
+    }
+
+    function handleKeyDown(e) {
+      if (e.code === 'Space' || e.code === 'KeyW') {
+        e.preventDefault();
+        if (gameState === 'START') {
+          startGame();
+        } else if (gameState === 'PLAYING') {
+          bird1.jump();
+        }
+      } else if (e.code === 'ArrowUp') {
+        e.preventDefault();
+        if (gameState === 'START') {
+          startGame();
+        } else if (gameState === 'PLAYING') {
+          if (currentMode === 'pvp') {
+            bird2.jump();
+          } else {
+            bird1.jump();
+          }
+        }
+      }
+    }
+
+    function handlePointerStart(e) {
+      e.preventDefault();
+      if (gameState === 'START') {
+        startGame();
+        return;
+      }
+
+      if (gameState === 'PLAYING') {
+        if (currentMode === 'single') {
+          bird1.jump();
+        } else {
+          const rect = canvas.getBoundingClientRect();
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const touchX = clientX - rect.left;
+
+          if (touchX < rect.width / 2) {
+            bird1.jump();
+          } else {
+            bird2.jump();
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    canvas.addEventListener('mousedown', handlePointerStart);
+    canvas.addEventListener('touchstart', handlePointerStart, { passive: false });
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    function gameLoop() {
+      frameCount++;
+
+      drawThemeBackground();
+
+      if (gameState === 'PLAYING') {
+        bird1.update();
+        if (currentMode === 'pvp') bird2.update();
+
+        updatePipes();
+        updateParticles();
+        checkAllCollisions();
+      } else if (gameState === 'START') {
+        bird1.y = canvas.height * 0.45 + Math.sin(frameCount * 0.05) * 8;
+        bird1.rotation = 0;
+
+        if (currentMode === 'pvp') {
+          bird2.y = canvas.height * 0.45 + Math.cos(frameCount * 0.05) * 8;
+          bird2.rotation = 0;
+        }
+
+        updateParticles();
+      }
+
+      drawPipes();
+      drawThemeGround();
+
+      bird1.draw();
+      if (currentMode === 'pvp' || gameState === 'START') {
+        bird2.draw();
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start engine
+    initThemeParticles();
+    bird1.reset(0);
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
